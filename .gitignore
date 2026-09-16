@@ -22,6 +22,9 @@ apps/api/.env
 apps/web/.env
 !*.env.example
 
+# Local dev data (uploaded datasets, local SQLite DB) — see ADR 0002
+apps/api/data/
+
 # Editors / OS
 .vscode/
 .idea/

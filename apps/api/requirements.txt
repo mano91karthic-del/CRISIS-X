@@ -8,3 +8,11 @@ psycopg[binary]==3.2.2
 python-dotenv==1.0.1
 pytest==8.3.3
 httpx==0.27.2
+
+# Phase 1: Data Hub (upload validation + metadata extraction)
+python-multipart==0.0.32
+rasterio==1.5.1
+geopandas==1.1.4
+shapely==2.1.2
+pyproj==3.8.0
+pandas==3.0.5

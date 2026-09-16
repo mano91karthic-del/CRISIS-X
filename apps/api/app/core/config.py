@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: str = "http://localhost:5173"
     database_url: str = "postgresql+psycopg://crisisx:change_me@localhost:5432/crisisx"
+    data_storage_root: str = "./data/storage"
 
     @property
     def cors_origin_list(self) -> list[str]:

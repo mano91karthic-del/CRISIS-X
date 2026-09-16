@@ -8,6 +8,8 @@ from sqlalchemy import engine_from_config, pool
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings  # noqa: E402
+from app.db.base import Base  # noqa: E402
+from app.models import Dataset, Project  # noqa: E402,F401  (import registers mappers)
 
 config = context.config
 
@@ -17,9 +19,7 @@ if config.config_file_name is not None:
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
-# No models exist yet (Phase 0). Later phases assign this to Base.metadata
-# once SQLAlchemy models are introduced, enabling autogenerate.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
@@ -41,7 +41,13 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            # SQLite can't ALTER columns directly; batch mode rebuilds the
+            # table instead. Harmless on Postgres, required for SQLite.
+            render_as_batch=connection.dialect.name == "sqlite",
+        )
         with context.begin_transaction():
             context.run_migrations()
 
