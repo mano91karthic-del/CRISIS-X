@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts
+
+# Env files (examples are committed, real env files are not)
+.env
+apps/api/.env
+apps/web/.env
+!*.env.example
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
