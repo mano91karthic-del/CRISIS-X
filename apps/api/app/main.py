@@ -6,7 +6,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.datasets import router as datasets_router
+from app.api.digital_twin import router as digital_twin_router
+from app.api.eo_change import router as eo_change_router
+from app.api.exposure import router as exposure_router
+from app.api.hazards import router as hazards_router
 from app.api.projects import router as projects_router
+from app.api.risk import router as risk_router
+from app.api.routing import router as routing_router
+from app.api.scenarios import router as scenarios_router
+from app.api.terrain_packages import router as terrain_packages_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -39,6 +47,14 @@ app.add_middleware(
 
 app.include_router(projects_router)
 app.include_router(datasets_router)
+app.include_router(terrain_packages_router)
+app.include_router(hazards_router)
+app.include_router(eo_change_router)
+app.include_router(exposure_router)
+app.include_router(risk_router)
+app.include_router(routing_router)
+app.include_router(digital_twin_router)
+app.include_router(scenarios_router)
 
 
 @app.get("/health")

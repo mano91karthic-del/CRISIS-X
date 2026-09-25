@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.dataset import DatasetStatus, DatasetType
+from app.models.dataset import DatasetStatus
 
 
 class DatasetRead(BaseModel):
@@ -12,7 +12,19 @@ class DatasetRead(BaseModel):
     id: str
     project_id: str
     name: str
-    dataset_type: DatasetType
+    # Plain str, not the DatasetType enum: this field also holds derived
+    # product names ("slope", "aspect") that DatasetType intentionally
+    # excludes — see app/models/dataset.py.
+    dataset_type: str
+    source_dataset_id: str | None
+    origin: str
+    terrain_x_package_id: str | None
+    hazard_scenario_id: str | None
+    eo_change_analysis_id: str | None
+    exposure_analysis_id: str | None
+    risk_analysis_id: str | None
+    route_analysis_id: str | None
+    acquisition_date: datetime | None
     source_filename: str
     file_format: str | None
     crs: str | None

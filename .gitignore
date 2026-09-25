@@ -16,6 +16,11 @@ dist-ssr/
 apps/web/vite.config.js
 apps/web/vite.config.d.ts
 
+# Playwright runtime output
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+
 # Env files (examples are committed, real env files are not)
 .env
 apps/api/.env

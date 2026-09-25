@@ -9,7 +9,21 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
-from app.models import Dataset, Project  # noqa: E402,F401  (import registers mappers)
+from app.models import (  # noqa: E402,F401  (import registers mappers)
+    Dataset,
+    DigitalTwin,
+    EOChangeAnalysis,
+    ExposureAnalysis,
+    HazardScenario,
+    Project,
+    RiskAnalysis,
+    RouteAnalysis,
+    Scenario,
+    ScenarioBaselineLayer,
+    ScenarioLayerOverride,
+    TerrainXPackage,
+    TwinLayer,
+)
 
 config = context.config
 

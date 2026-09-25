@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
 from app.db.session import get_db
+from app.db.sqlite_pragma import enable_sqlite_foreign_keys
 from app.main import app
 from app.services import storage as storage_module
 
@@ -26,6 +27,7 @@ def tmp_storage_root(tmp_path: Path) -> Generator[Path, None, None]:
 def client(tmp_path: Path, tmp_storage_root: Path) -> Generator[TestClient, None, None]:
     db_path = tmp_path / "test.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    enable_sqlite_foreign_keys(engine)
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
