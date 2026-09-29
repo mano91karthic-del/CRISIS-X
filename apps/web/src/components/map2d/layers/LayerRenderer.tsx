@@ -2,14 +2,15 @@ import type { LayerState } from '../../../state/dashboardStore'
 import { useRasterImageLayer } from './useRasterImageLayer'
 import { useVectorLayer } from './useVectorLayer'
 import { useRouteLayer } from './useRouteLayer'
-import { CLASS_COLORED_VECTOR_TYPES, isRasterDatasetType } from './datasetTypeClassification'
+import {
+  CLASS_COLORED_VECTOR_TYPES,
+  COLOR_PROPERTY_BY_DATASET_TYPE,
+  DEFAULT_FALLBACK_COLOR,
+  FALLBACK_COLOR_BY_DATASET_TYPE,
+  isRasterDatasetType,
+} from './datasetTypeClassification'
 
 const ROUTE_TYPES = new Set(['route_shortest', 'route_hazard_aware', 'route_blocked_segments'])
-
-const COLOR_PROPERTY_BY_TYPE: Record<string, string> = {
-  risk_classification: 'risk_class',
-  exposure_features: 'hazard_class_label',
-}
 
 /** One instance per active LayerState -- calls exactly one of
  * useRasterImageLayer/useVectorLayer/useRouteLayer unconditionally
@@ -42,8 +43,8 @@ export function LayerRenderer({ layer }: { layer: LayerState }) {
     datasetId: !isRaster && !isRoute ? layer.datasetId : null,
     visible: layer.visible && !isRaster && !isRoute,
     opacity: layer.opacity,
-    fallbackColor: '#64748b',
-    colorProperty: CLASS_COLORED_VECTOR_TYPES.has(layer.datasetType) ? COLOR_PROPERTY_BY_TYPE[layer.datasetType] : undefined,
+    fallbackColor: FALLBACK_COLOR_BY_DATASET_TYPE[layer.datasetType] ?? DEFAULT_FALLBACK_COLOR,
+    colorProperty: CLASS_COLORED_VECTOR_TYPES.has(layer.datasetType) ? COLOR_PROPERTY_BY_DATASET_TYPE[layer.datasetType] : undefined,
   })
 
   return null

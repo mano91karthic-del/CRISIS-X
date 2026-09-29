@@ -11,7 +11,7 @@ from app.db.session import get_db
 from app.models.dataset import Dataset, DatasetOrigin, DatasetStatus, DatasetType
 from app.models.project import Project
 from app.schemas.dataset import DatasetRead
-from app.schemas.derive import DeriveRequest
+from app.schemas.derive import ClipRequest, DeriveRequest
 from app.schemas.preview import RasterPreviewBoundsRead
 from app.services.dataset_gates import SourceNotEligible, ensure_metric_calibrated_if_terrain_x_import
 from app.services.preview import (
@@ -26,6 +26,7 @@ from app.services.preview import (
     compute_raster_bounds_wgs84,
 )
 from app.services.storage import dataset_storage_dir, save_upload
+from app.services.clip import clip_vector_to_polygon
 from app.services.terrain import derive_terrain_product
 from app.services.validation import VECTOR_EXTENSIONS, validate_dataset_file
 
@@ -206,6 +207,99 @@ def derive_dataset(dataset_id: str, payload: DeriveRequest, db: Session = Depend
     db.commit()
     db.refresh(derived)
     return derived
+
+
+@router.post("/datasets/{dataset_id}/clip", response_model=DatasetRead, status_code=201)
+def clip_dataset(dataset_id: str, payload: ClipRequest, db: Session = Depends(get_db)) -> Dataset:
+    """Clips a vector dataset to a registered STUDY_AREA dataset's polygon
+    (see app/services/clip.py and ADR 0013) -- the mechanical enforcement
+    of "every major layer must represent the same physical area." The
+    clipped output is registered as its own new Dataset (same
+    dataset_type as the source, so it slots into the twin/analysis
+    pipeline exactly like the unclipped version would), never mutating
+    the source in place.
+    """
+    source = db.get(Dataset, dataset_id)
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source dataset not found")
+    if source.status != DatasetStatus.VALIDATED.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Source dataset status is '{source.status}', not 'validated'. Cannot clip it.",
+        )
+    if source.file_format not in _VECTOR_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot clip file_format '{source.file_format}' -- only vector datasets can be clipped.",
+        )
+
+    aoi = db.get(Dataset, payload.aoi_dataset_id)
+    if aoi is None or aoi.project_id != source.project_id:
+        raise HTTPException(status_code=404, detail="AOI dataset not found in this project")
+    if aoi.dataset_type != DatasetType.STUDY_AREA.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"AOI dataset_type is '{aoi.dataset_type}', not '{DatasetType.STUDY_AREA.value}'.",
+        )
+    if aoi.status != DatasetStatus.VALIDATED.value:
+        raise HTTPException(status_code=400, detail=f"AOI dataset status is '{aoi.status}', not 'validated'.")
+
+    source_path = Path(source.storage_path)
+    aoi_path = Path(aoi.storage_path)
+    if not source_path.exists():
+        raise HTTPException(status_code=410, detail="Source dataset's stored file is missing")
+    if not aoi_path.exists():
+        raise HTTPException(status_code=410, detail="AOI dataset's stored file is missing")
+
+    clipped = Dataset(
+        project_id=source.project_id,
+        name=f"{source.name} (clipped to {aoi.name})",
+        dataset_type=source.dataset_type,
+        origin=DatasetOrigin.CRISISX_DERIVED.value,
+        source_dataset_id=source.id,
+        source_filename=f"{Path(source.source_filename or 'dataset').stem}_clipped.geojson",
+        storage_path="",
+        file_size_bytes=0,
+        checksum_sha256="",
+        status=DatasetStatus.UPLOADED.value,
+    )
+    db.add(clipped)
+    db.flush()  # assigns clipped.id without committing, so storage can key on it
+
+    output_dir = dataset_storage_dir(source.project_id, clipped.id)
+    output_path = output_dir / clipped.source_filename
+
+    try:
+        result = clip_vector_to_polygon(source_path, aoi_path, output_path)
+    except Exception as exc:
+        clipped.status = DatasetStatus.INVALID.value
+        clipped.validation_message = f"Clipping failed: {exc}"
+        db.commit()
+        db.refresh(clipped)
+        return clipped
+
+    checksum = hashlib.sha256(result.output_path.read_bytes()).hexdigest()
+
+    clipped.storage_path = str(result.output_path)
+    clipped.file_size_bytes = result.output_path.stat().st_size
+    clipped.checksum_sha256 = checksum
+    clipped.file_format = "geojson"
+    clipped.crs = result.crs
+    clipped.bbox_min_x, clipped.bbox_min_y, clipped.bbox_max_x, clipped.bbox_max_y = result.bbox
+    clipped.status = DatasetStatus.VALIDATED.value
+    clipped.metadata_json = result.metadata
+    clipped.provenance = {
+        "source_dataset_id": source.id,
+        "source_dataset_name": source.name,
+        "aoi_dataset_id": aoi.id,
+        "aoi_dataset_name": aoi.name,
+        "operation": "clip_to_study_area",
+        **result.metadata,
+    }
+
+    db.commit()
+    db.refresh(clipped)
+    return clipped
 
 
 @router.get("/datasets/{dataset_id}/derivatives", response_model=list[DatasetRead])

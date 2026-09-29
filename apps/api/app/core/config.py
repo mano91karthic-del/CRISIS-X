@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://crisisx:change_me@localhost:5432/crisisx"
     data_storage_root: str = "./data/storage"
 
+    # Phase 12 (AI Assistant) -- optional. Absent by default: the
+    # assistant works fully offline against the deterministic
+    # FakeProvider (see app/services/assistant/provider.py) with no key
+    # configured. No vendor SDK reads these yet -- see that module's
+    # docstring for why plugging in a real provider is deferred.
+    ai_provider_api_key: str | None = None
+    ai_provider_model: str | None = None
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

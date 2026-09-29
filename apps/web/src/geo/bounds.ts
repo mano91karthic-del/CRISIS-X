@@ -48,6 +48,20 @@ export function toMapLibreBounds(b: LonLatBounds): [[number, number], [number, n
   ]
 }
 
+/** True when a CRS string is geographic (WGS84-like degrees) -- the
+ * same unit family GeoJSON/lon-lat bounds are always in. A Dataset's
+ * own `crs`/`bbox_*` columns are NOT guaranteed WGS84 in general (many
+ * analysis outputs are stored in their hazard's native UTM CRS), so a
+ * caller wanting to union a Dataset's raw bbox_* into a WGS84 fitBounds
+ * target must gate on this first -- never assume, never reproject on
+ * the frontend (see ADR 0012 §19).
+ */
+export function isWgs84Crs(crs: string | null | undefined): boolean {
+  if (!crs) return false
+  const upper = crs.toUpperCase()
+  return upper.includes('4326') || upper.includes('WGS 84') || upper.includes('WGS84')
+}
+
 /** MapLibre's `image` source expects four corners, clockwise from the
  * top-left: [[nw],[ne],[se],[sw]].
  */

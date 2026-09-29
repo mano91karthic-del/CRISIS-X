@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidBounds, toImageSourceCoordinates, toMapLibreBounds, unionBounds } from './bounds'
+import { isValidBounds, isWgs84Crs, toImageSourceCoordinates, toMapLibreBounds, unionBounds } from './bounds'
 
 describe('isValidBounds', () => {
   it('accepts a well-formed bounds object', () => {
@@ -58,5 +58,23 @@ describe('toMapLibreBounds / toImageSourceCoordinates', () => {
       [10, -5],
       [-10, -5],
     ])
+  })
+})
+
+describe('isWgs84Crs', () => {
+  it('recognizes EPSG:4326 in its common string forms', () => {
+    expect(isWgs84Crs('EPSG:4326')).toBe(true)
+    expect(isWgs84Crs('WGS 84')).toBe(true)
+    expect(isWgs84Crs('epsg:4326')).toBe(true)
+  })
+
+  it('rejects a projected CRS', () => {
+    expect(isWgs84Crs('EPSG:32643')).toBe(false)
+    expect(isWgs84Crs('EPSG:32644')).toBe(false)
+  })
+
+  it('rejects null/undefined without throwing', () => {
+    expect(isWgs84Crs(null)).toBe(false)
+    expect(isWgs84Crs(undefined)).toBe(false)
   })
 })

@@ -10,12 +10,23 @@ CRISIS-X is developed independently of TERRAIN-X (a separate
 terrain-reconstruction project built by another team) but can optionally
 import TERRAIN-X's standardized outputs.
 
-## Status: Phase 1 — Data Hub
+## Status: Phase 12 — AI Assistant
 
-Phase 0 (Foundations) plus Phase 1 (Data Hub): project/dataset management
-with file upload, CRS/bounding-box extraction, and validation for raster
-(GeoTIFF), vector (GeoJSON/Shapefile/GeoPackage), and tabular (CSV) data.
-See `docs/architecture/` for the phased build plan and ADRs.
+Phases 0-11 (Foundations through the 2D/3D Command Dashboard) are
+implemented, plus Phase 12: a read-only AI Assistant that answers
+natural-language questions about a project's Digital Twin, hazard/
+exposure/risk/route analyses, and scenarios, grounded entirely in
+already-computed CRISIS-X data (it never invents a result, and says so
+explicitly when information isn't available). See `docs/architecture/`
+for the full phased build plan and ADRs, and
+`docs/architecture/0013-phase-12-ai-assistant.md` for the assistant's
+architecture specifically.
+
+The assistant works out of the box with **no AI provider configured**:
+it runs against a deterministic, fully offline `FakeProvider` by
+default. `AI_PROVIDER_API_KEY`/`AI_PROVIDER_MODEL` in
+`apps/api/.env.example` are optional and commented out -- a real AI
+vendor SDK is intentionally not wired in yet (see the ADR).
 
 **Docker Desktop is currently not required.** It's unavailable on the dev
 machine, so the database defaults to local SQLite for now — see

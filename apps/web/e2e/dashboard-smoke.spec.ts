@@ -183,3 +183,75 @@ test('Command Dashboard 3D view renders the seeded DEM as a visible, correctly s
   expect(Number.isFinite(framing!.distance)).toBe(true)
   expect(framing!.radius / framing!.distance).toBeGreaterThan(0.05)
 })
+
+// New visualization-integration phase: 3D road/route draping
+// (terrainOverlay.ts). The e2e fixture DEM is a projected-CRS raster
+// (EPSG:32643, matching its existing coordinate-system test coverage
+// elsewhere) -- toggling the roads layer must NOT silently misplace
+// overlay geometry against a CRS the coordinate transform doesn't
+// support; it must gracefully add nothing. The correctness of the
+// transform itself for a geographic-CRS DEM (the real-world case) is
+// covered by terrainOverlay.test.ts's unit tests.
+test('Command Dashboard 3D view does not add vector overlay geometry for a projected-CRS DEM', async ({ page, request }) => {
+  const { project } = await seedProject(request)
+
+  await page.goto(`/dashboard/projects/${project.id}`)
+  await page.getByRole('tab', { name: '3d' }).click()
+  await page.getByRole('checkbox', { name: /toggle dem layer visibility/i }).check()
+
+  await page.waitForFunction(() => {
+    const scene = (window as unknown as { __scene?: { children: { type: string }[] } }).__scene
+    return !!scene && scene.children.some((c) => c.type === 'Mesh')
+  })
+
+  // Toggle roads visible -- for this projected-CRS DEM, no overlay Group
+  // should ever be added (isGeographicNativeCrs guards this).
+  await page.getByRole('checkbox', { name: /toggle roads layer visibility/i }).check()
+  await page.waitForTimeout(300) // let any (incorrect) async overlay build settle, if it were to happen
+
+  const childTypes = await page.evaluate(() => {
+    const scene = (window as unknown as { __scene?: { children: { type: string }[] } }).__scene
+    return scene ? scene.children.map((c) => c.type) : []
+  })
+  expect(childTypes.filter((t) => t === 'Group')).toHaveLength(0)
+})
+
+// Phase 12: AI Assistant. Uses the app's default FakeProvider (see
+// apps/api/app/api/assistant.py::get_assistant_provider) -- no real AI
+// provider/API key/network access is configured anywhere in this test
+// run, proving the whole flow works fully offline and deterministically.
+test('Command Dashboard Assistant tab answers a question with evidence, no real AI provider required', async ({ page, request }) => {
+  const { project } = await seedProject(request)
+
+  await page.goto(`/dashboard/projects/${project.id}`)
+
+  await page.getByRole('tab', { name: 'Assistant' }).click()
+  await page.getByLabel('Ask about this project').fill('What hazards are available for this project?')
+  await page.getByRole('button', { name: /^ask$/i }).click()
+
+  // Evidence/sources must still appear (secondary section) -- the
+  // assistant is grounded in real tool calls against the seeded
+  // project, not a canned static reply.
+  await expect(page.getByText(/Evidence \/ sources/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('list_hazard_scenarios', { exact: true })).toBeVisible()
+
+  // The visible answer must read conversationally: it names the actual
+  // seeded hazard, and never leaks internal tool names or "returned
+  // data" tool-log phrasing into the prose itself.
+  const answer = page.getByTestId('assistant-answer')
+  await expect(answer).toBeVisible()
+  const answerText = (await answer.innerText()).trim()
+  expect(answerText.length).toBeGreaterThan(0)
+  expect(answerText.toLowerCase()).toContain('landslide')
+  expect(answerText).not.toContain('returned data')
+  for (const toolName of [
+    'get_twin_state',
+    'list_hazard_scenarios',
+    'list_exposure_analyses',
+    'list_risk_analyses',
+    'list_route_analyses',
+    'find_highest_risk_classes',
+  ]) {
+    expect(answerText).not.toContain(toolName)
+  }
+})

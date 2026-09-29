@@ -8,9 +8,31 @@ afterEach(() => {
 })
 
 describe('LegendPanel', () => {
-  it('shows a placeholder when no classified layer is visible', () => {
+  it('shows a placeholder when no layer is visible', () => {
     render(<LegendPanel />)
-    expect(screen.getByText(/No classified layers currently visible/)).toBeInTheDocument()
+    expect(screen.getByText(/No layers currently visible/)).toBeInTheDocument()
+  })
+
+  it('renders a fixed-color swatch for a visible roads/route layer', () => {
+    useDashboardStore.setState({
+      layers: {
+        a: { layerId: 'a', datasetId: 'd1', datasetType: 'roads', category: 'observation', visible: true, opacity: 0.8, zIndex: 0 },
+        b: {
+          layerId: 'b',
+          datasetId: 'd2',
+          datasetType: 'route_hazard_aware',
+          category: 'route',
+          visible: true,
+          opacity: 0.8,
+          zIndex: 0,
+        },
+        c: { layerId: 'c', datasetId: 'd3', datasetType: 'shelters', category: 'observation', visible: false, opacity: 0.8, zIndex: 0 },
+      },
+    })
+    render(<LegendPanel />)
+    expect(screen.getByText('roads')).toBeInTheDocument()
+    expect(screen.getByText('hazard-aware route')).toBeInTheDocument()
+    expect(screen.queryByText('shelters')).not.toBeInTheDocument()
   })
 
   it('renders a legend row for a visible classified layer, not a hidden one', () => {

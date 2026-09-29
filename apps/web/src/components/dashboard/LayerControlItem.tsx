@@ -1,5 +1,10 @@
 import { useDashboardStore, type LayerState } from '../../state/dashboardStore'
 import { colorForLabel } from '../../geo/legendColors'
+import {
+  DEFAULT_FALLBACK_COLOR,
+  FALLBACK_COLOR_BY_DATASET_TYPE,
+  ROUTE_COLOR_BY_DATASET_TYPE,
+} from '../map2d/layers/datasetTypeClassification'
 
 export interface LayerControlItemProps {
   layer: LayerState
@@ -12,7 +17,11 @@ export function LayerControlItem({ layer, hasCrs, hasError, legendLabel }: Layer
   const setLayerVisible = useDashboardStore((s) => s.setLayerVisible)
   const setLayerOpacity = useDashboardStore((s) => s.setLayerOpacity)
 
-  const swatchColor = legendLabel ? colorForLabel(legendLabel) : '#64748b'
+  const swatchColor = legendLabel
+    ? colorForLabel(legendLabel)
+    : (ROUTE_COLOR_BY_DATASET_TYPE[layer.datasetType] ??
+      FALLBACK_COLOR_BY_DATASET_TYPE[layer.datasetType] ??
+      DEFAULT_FALLBACK_COLOR)
 
   return (
     <div className="flex flex-col gap-1 rounded px-2 py-1.5 hover:bg-slate-900">

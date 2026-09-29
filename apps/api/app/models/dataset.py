@@ -33,6 +33,11 @@ class DatasetType(str, enum.Enum):
     SAFE_ZONES = "safe_zones"
     FLOOD_SCREENING = "flood_screening"
     LANDSLIDE_SUSCEPTIBILITY_SCREENING = "landslide_susceptibility_screening"
+    # ADR 0013: the canonical study-area boundary a project's other layers
+    # are clipped/validated against (see DigitalTwin.study_area_dataset_id
+    # and services/clip.py) -- a small vector polygon, uploaded like any
+    # other dataset, never itself a computed/scientific output.
+    STUDY_AREA = "study_area"
     # Superseded by Phase 3's per-asset import (see DatasetOrigin.TERRAIN_X_IMPORT
     # and TerrainXPackage) — left in place, unused, to avoid churn on the enum.
     TERRAIN_X_PACKAGE = "terrain_x_package"

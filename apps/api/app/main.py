@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.assistant import router as assistant_router
 from app.api.datasets import router as datasets_router
 from app.api.digital_twin import router as digital_twin_router
 from app.api.eo_change import router as eo_change_router
@@ -55,6 +56,7 @@ app.include_router(risk_router)
 app.include_router(routing_router)
 app.include_router(digital_twin_router)
 app.include_router(scenarios_router)
+app.include_router(assistant_router)
 
 
 @app.get("/health")

@@ -1,10 +1,5 @@
 import { useVectorLayer } from './useVectorLayer'
-
-const ROUTE_COLORS: Record<string, string> = {
-  route_shortest: '#94a3b8', // neutral slate -- the plain shortest path
-  route_hazard_aware: '#22d3ee', // accent cyan -- the hazard-aware path
-  route_blocked_segments: '#ef4444', // high-contrast red -- always visually "blocked"
-}
+import { ROUTE_COLOR_BY_DATASET_TYPE } from './datasetTypeClassification'
 
 export interface UseRouteLayerOptions {
   layerId: string
@@ -26,6 +21,6 @@ export function useRouteLayer(options: UseRouteLayerOptions) {
     datasetId,
     visible,
     opacity,
-    fallbackColor: ROUTE_COLORS[datasetType],
+    fallbackColor: ROUTE_COLOR_BY_DATASET_TYPE[datasetType],
   })
 }

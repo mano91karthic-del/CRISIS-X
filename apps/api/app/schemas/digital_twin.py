@@ -19,8 +19,18 @@ class DigitalTwinRead(BaseModel):
     name: str
     description: str | None
     version: int
+    study_area_dataset_id: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class StudyAreaRequest(BaseModel):
+    """Sets (or clears, with dataset_id=None) the twin's canonical study
+    area -- see ADR 0013. The referenced dataset must be a validated
+    STUDY_AREA-type dataset in the same project.
+    """
+
+    dataset_id: str | None
 
 
 class TwinLayerRequest(BaseModel):

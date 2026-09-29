@@ -50,6 +50,17 @@ class DigitalTwin(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
+    # ADR 0013: the canonical study-area boundary this twin's other layers
+    # are meant to spatially align with -- a Dataset of type STUDY_AREA
+    # (a small vector polygon). Nullable: a twin created before this
+    # concept existed, or one that never needed it, simply has none. SET
+    # NULL on delete (not CASCADE), matching TwinLayer.dataset_id's own
+    # "lineage survives" policy -- losing the AOI dataset shouldn't delete
+    # the twin.
+    study_area_dataset_id: Mapped[str | None] = mapped_column(
+        ForeignKey("datasets.id", ondelete="SET NULL"), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow)
 

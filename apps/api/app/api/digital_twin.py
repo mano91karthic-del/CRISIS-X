@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.dataset import Dataset, DatasetStatus
+from app.models.dataset import Dataset, DatasetStatus, DatasetType
 from app.models.digital_twin import DigitalTwin, TwinLayer, TwinLayerStatus
 from app.models.project import Project
 from app.schemas.dataset import DatasetRead
@@ -11,6 +11,7 @@ from app.schemas.digital_twin import (
     DigitalTwinRead,
     DigitalTwinRequest,
     DigitalTwinStateRead,
+    StudyAreaRequest,
     TwinAcquisitionDateRangeRead,
     TwinExtentRead,
     TwinLayerRead,
@@ -92,6 +93,34 @@ def get_digital_twin_by_project(project_id: str, db: Session = Depends(get_db)) 
 @router.get("/digital-twins/{twin_id}", response_model=DigitalTwinRead)
 def get_digital_twin(twin_id: str, db: Session = Depends(get_db)) -> DigitalTwin:
     return _get_twin_or_404(db, twin_id)
+
+
+@router.put("/digital-twins/{twin_id}/study-area", response_model=DigitalTwinRead)
+def set_study_area(twin_id: str, payload: StudyAreaRequest, db: Session = Depends(get_db)) -> DigitalTwin:
+    """Sets or clears the twin's canonical study area -- see ADR 0013's
+    "one coherent, geographically consistent study area" requirement.
+    Deliberately does NOT re-clip or re-run any existing layer itself
+    (that's a separate, explicit action via /datasets/{id}/clip); this
+    endpoint only records which dataset IS the canonical boundary, so
+    validation/reporting elsewhere in the system has one place to read it
+    from.
+    """
+    twin = _get_twin_or_404(db, twin_id)
+    if payload.dataset_id is not None:
+        dataset = db.get(Dataset, payload.dataset_id)
+        if dataset is None or dataset.project_id != twin.project_id:
+            raise HTTPException(status_code=404, detail="Dataset not found in this project")
+        if dataset.dataset_type != DatasetType.STUDY_AREA.value:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dataset type is '{dataset.dataset_type}', not '{DatasetType.STUDY_AREA.value}'.",
+            )
+        if dataset.status != DatasetStatus.VALIDATED.value:
+            raise HTTPException(status_code=400, detail=f"Dataset status is '{dataset.status}', not 'validated'.")
+    twin.study_area_dataset_id = payload.dataset_id
+    db.commit()
+    db.refresh(twin)
+    return twin
 
 
 @router.post(

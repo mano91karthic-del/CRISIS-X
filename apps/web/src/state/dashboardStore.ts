@@ -81,7 +81,10 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   setLayerVisible: (layerId, visible) =>
     set((state) => {
       const layer = state.layers[layerId]
-      if (!layer) return state
+      if (!layer) {
+        // Layer doesn't exist yet (e.g. Safe Route synthetic ID) — create it
+        return { layers: { ...state.layers, [layerId]: { layerId, datasetId: null, datasetType: 'safe_route', category: 'route', visible, opacity: 1, zIndex: 0 } } }
+      }
       return { layers: { ...state.layers, [layerId]: { ...layer, visible } } }
     }),
 

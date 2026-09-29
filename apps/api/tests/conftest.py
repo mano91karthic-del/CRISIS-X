@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.base import Base
 from app.db.session import get_db
@@ -24,7 +24,16 @@ def tmp_storage_root(tmp_path: Path) -> Generator[Path, None, None]:
 
 
 @pytest.fixture()
-def client(tmp_path: Path, tmp_storage_root: Path) -> Generator[TestClient, None, None]:
+def db_session(tmp_path: Path, tmp_storage_root: Path) -> Generator[Session, None, None]:
+    """A raw SQLAlchemy Session on the same SQLite database the `client`
+    fixture's TestClient requests use (both point `get_db` at the same
+    sessionmaker/engine) -- lets a test seed data via real HTTP calls
+    through `client` and then call a service/tool function directly with
+    a real Session, without duplicating engine setup. Added for Phase 12
+    (app/services/assistant/tools.py takes a Session directly, not a
+    FastAPI request) -- purely additive, `client`'s own behavior/
+    signature is unchanged for every existing Phase 0-11 test.
+    """
     db_path = tmp_path / "test.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
     enable_sqlite_foreign_keys(engine)
@@ -39,10 +48,19 @@ def client(tmp_path: Path, tmp_storage_root: Path) -> Generator[TestClient, None
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    session = testing_session_local()
+    try:
+        yield session
+    finally:
+        session.close()
+        app.dependency_overrides.clear()
+        engine.dispose()
+
+
+@pytest.fixture()
+def client(db_session: Session) -> Generator[TestClient, None, None]:
     with TestClient(app) as test_client:
         yield test_client
-    app.dependency_overrides.clear()
-    engine.dispose()
 
 
 @pytest.fixture()

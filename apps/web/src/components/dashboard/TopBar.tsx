@@ -80,8 +80,8 @@ export function TopBar({
 
       <div className="ml-auto flex items-center gap-2">
         {viewMode === '3d' && (
-          <label className="flex items-center gap-1 text-xs text-slate-400">
-            Terrain ×
+          <label className="flex items-center gap-1.5 text-xs text-slate-400" title="Visualization exaggeration multiplier -- real elevation values are preserved">
+            <span>Terrain exaggeration</span>
             <input
               type="range"
               min={1}
@@ -91,7 +91,7 @@ export function TopBar({
               onChange={(e) => setTerrainExaggeration(Number(e.target.value))}
               className="accent-emerald-500"
             />
-            <span className="w-8 text-slate-300">{terrainExaggeration.toFixed(1)}</span>
+            <span className="w-12 text-slate-300">{terrainExaggeration.toFixed(1)}x</span>
           </label>
         )}
         <div role="tablist" className="flex overflow-hidden rounded border border-slate-700">
