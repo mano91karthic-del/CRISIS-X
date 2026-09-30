@@ -3,11 +3,13 @@
 # Usage: Import this file in the Render Dashboard or use `render blueprint apply`.
 
 services:
-  # FastAPI Web Service
+  # FastAPI Web Service (native Python runtime)
   - type: web
     name: crisis-x-api
-    runtime: docker
+    runtime: python
+    rootDir: apps/api
     plan: free
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
@@ -22,17 +24,13 @@ services:
           name: crisis-x-db
           property: connectionString
       - key: DATA_STORAGE_ROOT
-        value: /var/data/crisisx
+        value: /tmp/crisisx
       - key: CORS_ORIGINS
         sync: false
       - key: AI_PROVIDER_API_KEY
         sync: false
       - key: AI_PROVIDER_MODEL
         sync: false
-    disk:
-      name: crisisx-data
-      mountPath: /var/data/crisisx
-      sizeGB: 1
 
 databases:
   - name: crisis-x-db
