@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +14,32 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     database_url: str = "postgresql+psycopg://crisisx:change_me@localhost:5432/crisisx"
     data_storage_root: str = "./data/storage"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """Normalize PostgreSQL URLs to use the Psycopg 3 SQLAlchemy driver.
+
+        Render injects DATABASE_URL as postgresql://... but the project uses
+        psycopg[binary]==3.2.2 (Psycopg 3), which requires the
+        postgresql+psycopg:// dialect. Without this normalization SQLAlchemy
+        falls back to psycopg2 (not installed).
+
+        Rules:
+        - postgresql://...  -> postgresql+psycopg://...
+        - postgres://...     -> postgresql+psycopg://...
+        - postgresql+psycopg://... (already correct) -> unchanged
+        - sqlite:///... (local dev) -> unchanged
+        """
+        if not isinstance(v, str):
+            return v
+        if v.startswith("postgresql+psycopg://"):
+            return v
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg://", 1)
+        return v
 
     # Phase 12 (AI Assistant) -- optional. Absent by default: the
     # assistant works fully offline against the deterministic
