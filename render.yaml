@@ -1,0 +1,45 @@
+# CRISIS-X Render Blueprint
+# Reproducible infrastructure as code for Render deployment.
+# Usage: Import this file in the Render Dashboard or use `render blueprint apply`.
+
+services:
+  # FastAPI Web Service
+  - type: web
+    name: crisis-x-api
+    runtime: docker
+    plan: free
+    buildCommand: ""
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crisis-x-db
+          property: connectionString
+      - key: DATA_STORAGE_ROOT
+        value: /var/data/crisisx
+      - key: CORS_ORIGINS
+        sync: false
+      - key: AI_PROVIDER_API_KEY
+        sync: false
+      - key: AI_PROVIDER_MODEL
+        sync: false
+    disk:
+      name: crisisx-data
+      mountPath: /var/data/crisisx
+      sizeGB: 1
+
+  # PostgreSQL Database with PostGIS
+  - type: psql
+    name: crisis-x-db
+    plan: free
+    databaseName: crisisx
+    databaseUser: crisisx
+    # PostGIS extension will be enabled via a post-deploy command
+    # or manually in the Render dashboard
